@@ -8,12 +8,24 @@
 	<!-- 配置启动IOC容器的Listener -->
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
-		<param-value>classpath:applicationContext.xml</param-value>
+		<param-value>classpath:applicationContext.xml,classpath:Spring-security.xml</param-value>
 	</context-param>
 
 	<listener>
 		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
 	</listener>
+	
+	 
+    <!-- Spring security Filter -->
+    <filter>
+	  <filter-name>springSecurityFilterChain</filter-name>
+	  <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+	</filter>
+
+	<filter-mapping>
+	  <filter-name>springSecurityFilterChain</filter-name>
+	  <url-pattern>/*</url-pattern>
+	</filter-mapping>
 
 	<!-- 配置字符编码过滤器 -->
 	<!-- 字符编码过滤器 必须诶之在所有过滤器的最前面 -->
@@ -31,6 +43,8 @@
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
 	
+	
+   
 	<!-- 配置OpenEntityManagerInViewFilter 可以解决懒加载异常的问题 -->
 	<filter>
 		<filter-name>OpenEntityManagerInViewFilter</filter-name>
