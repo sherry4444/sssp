@@ -25,7 +25,7 @@ public class SSSPTest {
 		ctx = new ClassPathXmlApplicationContext("applicationContext.xml");
 		departmentRepository = ctx.getBean(DepartmentRepository.class);
 		entityManagerFactory = ctx.getBean(EntityManagerFactory.class);
-
+		
 	}
 
 	@Test
@@ -60,11 +60,16 @@ public class SSSPTest {
 		int key = 1;
 		switch (key) {
 		case 1:
-			System.out.println("bbb" + key);
+			//System.out.println("bbb : " + key);
 			break;
 		default:
 			break;
 		}
+		
+		int a=1,b=1;
+		//boolean a=false,b=true;
+		boolean c= a==b==true;
+		System.out.println("a==b==true: " + (a==b==true));
 	}
 
 }

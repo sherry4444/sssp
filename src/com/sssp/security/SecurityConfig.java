@@ -24,7 +24,7 @@
 //          .anyRequest().authenticated()
 //          .and()
 //          .formLogin()
-//          .loginPage("/login")//未登录用户拦截跳转到的路径
+//          .loginPage("/login.jsp")//未登录用户拦截跳转到的路径
 //          .defaultSuccessUrl("/emps")//登录成功后的路径
 //          .permitAll();
 ////          .and()
