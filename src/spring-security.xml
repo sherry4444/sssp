@@ -1,24 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-  xmlns:security="http://www.springframework.org/schema/security"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
           http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
           http://www.springframework.org/schema/security
           http://www.springframework.org/schema/security/spring-security-3.1.xsd">
 
- 
-   <security:http auto-config="true">
-      <security:intercept-url pattern="/**" access="ROLE_USER"/>
-   </security:http>
+	<!-- 指定匿名访问login 不进入security的filter 与 access="IS_AUTHENTICATED_ANONYMOUSLY" 
+		效果一样 -->
+	<!-- <security:http security="none" pattern="/login" /> -->
 
-   <security:authentication-manager>
-      <security:authentication-provider>
-         <security:user-service>
-            <security:user name="user" password="user" authorities="ROLE_USER"/>
-            <security:user name="admin" password="admin" authorities="ROLE_USER, ROLE_ADMIN"/>
-         </security:user-service>
-      </security:authentication-provider>
-   </security:authentication-manager>
+	<security:http auto-config="true">
+		<!-- 自定义登录页面 -->
+		<security:form-login login-page="/login"
+			login-processing-url="/login" username-parameter="username"
+			password-parameter="password" />
+
+		<!-- 指定匿名访问login 进入security的filter -->
+		<security:intercept-url pattern="/login" access="IS_AUTHENTICATED_ANONYMOUSLY" />
+
+		<security:intercept-url pattern="/**" access="ROLE_USER" />
+	</security:http>
+
+	<security:authentication-manager>
+		<security:authentication-provider>
+			<security:user-service>
+				<security:user name="user" password="user" authorities="ROLE_USER" />
+				<security:user name="admin" password="admin" authorities="ROLE_USER, ROLE_ADMIN" />
+			</security:user-service>
+		</security:authentication-provider>
+	</security:authentication-manager>
+
+	<!-- 认证成功后的处理类 -->
+	<bean id="authSuccess" class="com.sssp.security.AuthenticationSuccessHandlerImpl" />
+
+	<!-- 当定义 authentication-provider 元素时，如果没有通过 ref 属性指定关联哪个
+	AuthenticationProvider，Spring Security 默认就会使用
+	DaoAuthenticationProvider。 -->
+	<security:authentication-manager alias="authenticationManager">
+		<security:authentication-provider
+			user-service-ref="userDetailsService" />
+	</security:authentication-manager>
+	
+	<bean id="userDetailsService"
+      class="org.springframework.security.core.userdetails.jdbc.JdbcDaoImpl">
+      <property name="dataSource" ref="dataSource" />
+   </bean>
+   
+   
+   <!-- 异常信息本地化 -->
+   <bean id="messageSource"
+   class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+      <property name="basename"
+         value="classpath:org/springframework/security/messages" />
+   </bean>
 
 </beans>
+
+<!-- 
+	如果用户是直接请求登录页面，登录成功后应该跳转到哪里呢？默认情况下它会跳转到当前应用的根路径，即欢迎页面。
+           指定登录后的页面： 
+    1.通过 default-target-url 指定 通过指定 form-login 元素的 default-target-url 属性，我们可以让用户在直接登录后跳转到指定的页面。 
+	如果想让用户不管是直接请求登录页面，还是通过 Spring Security 引导过来的，登录之后都跳转到指定的页面， 我们可以通过指定 form-login 
+	元素的 always-use-default-target 属性为 true 来达到这一效果。
+	
+	 2.通过 authentication-success-handler-ref 
+	指定 authentication-success-handler-ref 对应一个 AuthencticationSuccessHandler 
+	实现类的引用。 如果指定了 authentication-success-handler-ref，登录认证成功后会调用指定 AuthenticationSuccessHandler 
+	的 onAuthenticationSuccess 方法。我们需要在该方法体内对认证成功做一个处理，然后返回对应的认证成功页面。 使用了 authentication-success-handler-ref 
+	之后认证成功后的处理就由指定的 AuthenticationSuccessHandler 来处理， 之前的那些 default-target-url 
+	之类的就都不起作用了。 
+	
+	默认情况下，在认证成功后 ProviderManager 将清除返回的 Authentication 中的凭证信息，如密码。
+	
+	Authentication 的 getAuthorities() 可以返回当前 Authentication 对象拥有的权限，即当前用户拥有的权限。其返回值是一个 GrantedAuthority 类型的数组
+	
+	
+	认证过程：
+    1.用户使用用户名和密码进行登录。
+    2.Spring Security 将获取到的用户名和密码封装成一个实现了 Authentication 接口的 UsernamePasswordAuthenticationToken。
+    3. 将上述产生的 token 对象传递给 AuthenticationManager 进行登录认证。
+    4.AuthenticationManager 认证成功后将会返回一个封装了用户权限等信息的 Authentication 对象。
+    5.通过调用 SecurityContextHolder.getContext().setAuthentication(...) 将 AuthenticationManager 返回的 Authentication 对象赋予给当前的 SecurityContext。
+	
+	
+	
+    引导用户进行登录，通常是重定向到一个基于 form 表单进行登录的页面，具体视配置而定。
+    用户输入用户名和密码后请求认证，后台还是会像上节描述的那样获取用户名和密码封装成一个 UsernamePasswordAuthenticationToken 对象，然后把它传递给 AuthenticationManager 进行认证。
+    如果认证失败将继续执行步骤 1，如果认证成功则会保存返回的 Authentication 到 SecurityContext，然后默认会将用户重定向到之前访问的页面。
+    用户登录认证成功后再次访问之前受保护的资源时就会对用户进行权限鉴定，如不存在对应的访问权限，则会返回 403 错误码。
+	
+	
+     
+-->
